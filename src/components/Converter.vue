@@ -3,7 +3,8 @@
     <h1>{{ msg }}</h1>
     <p>Please select a JSON or CSV file to convert.</p>
     <div class="converter">
-      <input type="file" accept="application/JSON, .csv" @change="loadTextFromFile" />
+      <label for="button" id="labelButton">{{ label }}</label>
+      <input type="file" id="button" accept="application/JSON, .csv" @change="loadTextFromFile" />
       <br />
       <br />
       <a id="lnkDwnldLnk" hidden="hidden">Download</a>
@@ -17,29 +18,39 @@ import { Component, Prop, Vue } from "vue-property-decorator";
 @Component
 export default class Converter extends Vue {
   @Prop() private msg!: string;
+  label = "Select a file";
 
   loadTextFromFile(event: any) {
     const file = event.target.files[0];
     const link = document.querySelector("#lnkDwnldLnk");
     const filename = file.name.split(".");
+
     if (filename[1].includes("json")) {
       this.convertToCSV(file, link, filename);
     } else if (filename[1].includes("csv")) {
       this.convertToJSON(file, link, filename);
     } else {
-      console.log("nenhum");
+      alert("Invalid file");
     }
   }
 
   convertToCSV(file: any, link: any, filename: any) {
     if (file) {
+      this.label = filename[0] + ".json";
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onerror = reject;
         reader.onload = () => {
           const loadedFile = String(reader.result);
           const jsonFile = JSON.parse(loadedFile);
-          resolve(jsonFile);
+          if (!jsonFile.length) {
+            const list: any[] = [];
+            list.unshift();
+            list.push(jsonFile);
+            resolve(list);
+          } else {
+            resolve(jsonFile);
+          }
         };
 
         reader.readAsText(file);
@@ -131,6 +142,11 @@ export default class Converter extends Vue {
       }
     }
   }
+
+  // changeLabel(label: string) {
+  //   const newLabel = document.querySelector("#labelButton");
+  //   newLabel ? (label.innerHTML = filename) : null;
+  // }
 }
 </script>
 
@@ -146,5 +162,23 @@ p {
 .converter {
   display: flex;
   justify-content: center;
+}
+
+input[type="file"] {
+  display: none;
+}
+
+label {
+  background-color: #e02041;
+  border-radius: 5px;
+  color: #fff;
+  cursor: pointer;
+  margin: 10px;
+  padding: 8px 20px;
+  transition: filter 0.2s;
+}
+
+label:hover {
+  filter: brightness(90%);
 }
 </style>
