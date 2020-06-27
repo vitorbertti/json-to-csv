@@ -1,32 +1,37 @@
 <template>
-  <div id="app">
-    <Converter msg="Welcome to JSON / CSV converter" />
-  </div>
+   <div id="app">
+      <Converter msg="Welcome to JSON / CSV converter" />
+   </div>
 </template>
 
 <script lang="ts">
-import { Component, Vue } from "vue-property-decorator";
-import Converter from "./components/Converter.vue";
+import { Component, Vue } from 'vue-property-decorator';
+import Converter from './components/Converter.vue';
 
 @Component({
-  components: {
-    Converter
-  }
+   components: {
+      Converter,
+   },
 })
 export default class App extends Vue {}
 </script>
 
 <style>
 #app {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+   margin: 0;
+   padding: 0;
+   box-sizing: border-box;
 }
+
 *,
 button,
 input {
-  border: 0;
-  outline: 0;
-  font-family: "Roboto", sans-serif;
+   border: 0;
+   outline: 0;
+   font-family: 'Roboto', sans-serif;
+}
+
+body {
+   background: #f0f0f5;
 }
 </style>
