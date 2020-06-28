@@ -22,12 +22,19 @@ export default class Converter extends Vue {
    @Prop() private msg!: string;
    label = 'Select a file';
 
-   loadTextFromFile(event: Event) {
+   loadTextFromFile(event: Event) {   
       const target = event.target as HTMLInputElement;
       const file: File = (target.files as FileList)[0];
       const link = document.querySelector('#lnkDwnldLnk');
-      const filename = file.name.split('.');
 
+      if(!file) {
+         this.label = 'Select a file';
+         link && link.setAttribute('hidden', 'true');
+         return;
+      }
+
+      const filename = file.name.split('.');
+      
       if (filename[1].includes('json')) {
          this.convertToCSV(file, link, filename);
       } else if (filename[1].includes('csv')) {
@@ -37,15 +44,25 @@ export default class Converter extends Vue {
       }
    }
 
-   convertToCSV(file: File, link: Element | null, filename: string[]) {
+   convertToCSV(file: File, link: Element | null, filename: string[]) {    
       if (file) {
-         this.label = filename[0] + '.json';
          return new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onerror = reject;
             reader.onload = () => {
-               const loadedFile = String(reader.result);
-               const jsonFile = JSON.parse(loadedFile);
+               const loadedFile = String(reader.result);              
+               const validJSON = this.verifyJSON(loadedFile);
+               
+               if(!validJSON) {
+                  this.label = 'Select a file';
+                  link && link.setAttribute('hidden', 'true');
+                  alert('Invalid JSON File');
+                  return;
+                }
+
+               this.label = filename[0] + '.json';
+               const jsonFile = JSON.parse(loadedFile);    
+
                if (!jsonFile.length) {
                   const list: string[] = [];
                   list.unshift();
@@ -54,8 +71,7 @@ export default class Converter extends Vue {
                } else {
                   resolve(jsonFile);
                }
-            };
-
+            }
             reader.readAsText(file);
          }).then((json: any) => {
             if (link) {
@@ -90,6 +106,18 @@ export default class Converter extends Vue {
       }
    }
 
+   verifyJSON(json: string) {
+      let data = '';
+      try {
+         data = JSON.parse(json);
+         if (data && typeof data === 'object' && data !== null) {
+            return true;
+         }
+      } catch(ex) {
+         return false;
+      }
+   }
+
    convertToJSON(file: File, link: Element | null, filename: string[]) {
       if (file) {
          this.label = filename[0] + '.csv';
@@ -102,37 +130,44 @@ export default class Converter extends Vue {
                resolve(loadedFile);
             };
             reader.readAsText(file);
-         }).then((csv) => {
-            let item = csv.trim();
-            item = item.replace(/"/g, '');
+         }).then((csv) => { 
+            try{
+               let item = csv.trim(); 
+               item = item.replace(/"/g, '');
 
-            if (link) {
-               link.removeAttribute('hidden');
-            }
-            const lines = item.split('\n');
-            const result = [];
-            const headers = lines[0].split(',');
+               if (link) {
+                  link.removeAttribute('hidden');
+               }
+               const lines = item.split('\n');
+               const result = [];
+               const headers = lines[0].split(',');
 
-            for (let i = 1; i < lines.length; i++) {
-               const obj: Record<string, string> = {};
-               const currentline = lines[i].split(',');
+               for (let i = 1; i < lines.length; i++) {
+                  const obj: Record<string, string> = {};
+                  const currentline = lines[i].split(',');
 
-               for (let j = 0; j < headers.length; j++) {
-                  obj[headers[j].trim()] = currentline[j].trim();
+                  for (let j = 0; j < headers.length; j++) {
+                     obj[headers[j].trim()] = currentline[j].trim();
+                  }
+
+                  result.push(obj);
                }
 
-               result.push(obj);
-            }
+               const finalJSON = JSON.stringify(result).replace('\\r', '');
 
-            const finalJSON = JSON.stringify(result).replace('\\r', '');
+               const blob = new Blob([finalJSON], { type: 'text/json' });
+               const csvUrl = window.webkitURL.createObjectURL(blob);
+               const filenameConverted = `${filename[0]}.json`;
 
-            const blob = new Blob([finalJSON], { type: 'text/json' });
-            const csvUrl = window.webkitURL.createObjectURL(blob);
-            const filenameConverted = `${filename[0]}.json`;
-
-            if (link) {
-               link.setAttribute('download', filenameConverted);
-               link.setAttribute('href', csvUrl);
+               if (link) {
+                  link.setAttribute('download', filenameConverted);
+                  link.setAttribute('href', csvUrl);
+               }
+            }catch(ex) {
+               this.label = 'Select a file';
+               link && link.setAttribute('hidden', 'true');
+               alert('Invalid CSV File');
+               return;
             }
          });
       } else {
